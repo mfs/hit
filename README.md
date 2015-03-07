@@ -1,6 +1,8 @@
 hit
 ===
 
+[![Build Status](https://travis-ci.org/mfs/hit.svg)](https://travis-ci.org/mfs/hit)
+
 ## Description
 
 As a Sys Admin I'm constantly checking and adjusting vhosts, redirects, headers,

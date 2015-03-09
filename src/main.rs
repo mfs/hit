@@ -22,7 +22,6 @@ use std::env;
 use hyper::status::StatusCode;
 use hyper::status::StatusClass::{Success,Redirection,ClientError,ServerError};
 use hyper::version::HttpVersion::{Http09,Http10,Http11,Http20};
-use hyper::header::HeaderView;
 use ansi_term::Colour::{Green,Yellow,Red,Cyan};
 
 fn color_status(status: StatusCode) -> String {
@@ -46,10 +45,10 @@ fn color_version(version: hyper::version::HttpVersion) -> String {
     }.to_string()
 }
 
-fn color_header(hv: HeaderView) -> String {
-    let h = format!("{}: {}", hv.name(), hv.value_string());
+fn color_header(name: String, value: String) -> String {
+    let h = format!("{}: {}", name, value);
 
-    match hv.name() {
+    match name.as_slice() {
         "Location" => Yellow.paint(&h).to_string(),
         "Server" | "Via" | "X-Powered-By" | "CF-RAY" => Cyan.paint(&h).to_string(),
         _ => h,
@@ -78,8 +77,16 @@ fn main() {
         Ok(y) => {
             println!("{} {}", color_version(y.version), color_status(y.status));
 
+            let mut headers: Vec<(String, String)> = Vec::new();
+
             for h in y.headers.iter() {
-                println!("\u{25CF} {}", color_header(h));
+                headers.push((h.name().to_string(), h.value_string()));
+            }
+
+            headers.sort();
+
+            for (name, value) in headers {
+                println!("\u{25CF} {}", color_header(name, value));
             }
         },
         Err(x) => println!("{}", x),

@@ -17,6 +17,3 @@ returned. Useful information (to me) is highlighted. It looks like this:
 
 ![screenshot](https://github.com/mfs/hit/raw/master/screenshots/1.png)
 
-## Todo
-
- - [ ] The list of headers highlighted should be adjustable at run time.

@@ -13,9 +13,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 #![feature(core)]
+#![feature(net)]
 
 extern crate core;
 extern crate hyper;
+extern crate url;
 extern crate ansi_term;
 
 use std::env;
@@ -55,6 +57,24 @@ fn color_header(name: String, value: String) -> String {
     }
 }
 
+fn lookup_ips(domain: String) -> std::io::Result<String> {
+
+    let hosts: std::net::LookupHost =  try!(std::net::lookup_host(&domain));
+
+    let mut ips: Vec<String> = Vec::new();
+    for host in hosts {
+       ips.push(format!("{}", host.unwrap().ip()));
+    }
+
+    ips.sort();
+    ips.dedup();
+
+    // For now just return first match
+    // Need to prioritize IPv6 over IPv4 plus be able to select one or the
+    // other. Fallback from IPv6 to IPv4 with a warning would be nice too.
+    Ok(ips[0].clone())
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() != 2 {
@@ -62,20 +82,38 @@ fn main() {
         return;
     }
 
-    let mut client = hyper::Client::new();
-    client.set_redirect_policy(hyper::client::RedirectPolicy::FollowNone);
-
-    let url = if !args[1].starts_with("http://") && !args[1].starts_with("https://") {
+    let url_in = if !args[1].starts_with("http://") && !args[1].starts_with("https://") {
         format!("http://{}", args[1])
     } else {
         args[1].clone()
     };
 
-    let res = client.get(url.as_slice()).send();
+    let url = match url::Url::parse(&url_in) {
+        Ok(x) => x,
+        Err(y) => {
+            println!("Invalid input: {}", y);
+            return;
+        }
+    };
+
+    let domain = url.domain().unwrap().to_string();
+
+    let ip_address = match lookup_ips(domain.to_string()) {
+        Ok(a) => a,
+        Err(b) => {
+            println!("Error: {}", b);
+            return;
+        }
+    };
+
+    let mut client = hyper::Client::new();
+    client.set_redirect_policy(hyper::client::RedirectPolicy::FollowNone);
+
+    let res = client.get(url).header(hyper::header::Host {hostname: domain, port: None}).send();
 
     match res {
         Ok(y) => {
-            println!("{} {}", color_version(y.version), color_status(y.status));
+            println!("{} {} @ {}", color_version(y.version), color_status(y.status), Cyan.paint(&ip_address).to_string());
 
             let mut headers: Vec<(String, String)> = Vec::new();
 

@@ -14,6 +14,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #![feature(core)]
 #![feature(net)]
+#![feature(str_words)]
 
 extern crate core;
 extern crate hyper;
@@ -21,6 +22,9 @@ extern crate url;
 extern crate ansi_term;
 
 use std::env;
+use std::fs::File;
+use std::io::BufReader;
+use std::io::BufRead;
 use hyper::status::StatusCode;
 use hyper::status::StatusClass::{Success,Redirection,ClientError,ServerError};
 use hyper::version::HttpVersion::{Http09,Http10,Http11,Http20};
@@ -75,6 +79,39 @@ fn lookup_ips(domain: String) -> std::io::Result<String> {
     Ok(ips[0].clone())
 }
 
+fn domain_in_hosts(domain: &String) -> bool {
+    let file = match File::open("/etc/hosts") {
+        Ok(file) => file,
+        Err(..) => return false,
+    };
+
+    let buffer = BufReader::new(&file);
+
+    for line in buffer.lines() {
+
+        if line.is_err() {
+            continue;
+        }
+
+        let entry: &str = &line.unwrap();
+
+        let mut elements: Vec<&str> = entry.words().collect();
+
+        // skip commented lines
+        if elements.len() > 0 && (*elements.remove(0)).starts_with("#") {
+            continue;
+        }
+
+        for e in elements {
+            if e == *domain {
+                return true;
+            }
+        }
+    }
+
+    false
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() != 2 {
@@ -98,6 +135,12 @@ fn main() {
 
     let domain = url.domain().unwrap().to_string();
 
+    let hosts_hack = if domain_in_hosts(&domain) {
+        Red.paint(" [/etc/hosts]").to_string()
+    } else {
+        "".to_string()
+    };
+
     let ip_address = match lookup_ips(domain.to_string()) {
         Ok(a) => a,
         Err(b) => {
@@ -113,7 +156,7 @@ fn main() {
 
     match res {
         Ok(y) => {
-            println!("{} {} @ {}", color_version(y.version), color_status(y.status), Cyan.paint(&ip_address).to_string());
+            println!("{} {} @ {}{}", color_version(y.version), color_status(y.status), Cyan.paint(&ip_address).to_string(), hosts_hack);
 
             let mut headers: Vec<(String, String)> = Vec::new();
 

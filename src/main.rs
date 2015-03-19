@@ -56,10 +56,10 @@ fn color_header(name: String, value: String) -> String {
     let h = format!("{}: {}", name, value);
 
     match name.as_slice() {
-        "Location" => Yellow.paint(&h).to_string(),
-        "Server" | "Via" | "X-Powered-By" | "CF-RAY" => Cyan.paint(&h).to_string(),
-        _ => h,
-    }
+        "Location" => Yellow.paint(&h),
+        "Server" | "Via" | "X-Powered-By" | "CF-RAY" => Cyan.paint(&h),
+        _ => Plain.paint(&h),
+    }.to_string()
 }
 
 fn lookup_ips(domain: String) -> std::io::Result<String> {

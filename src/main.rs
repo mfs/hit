@@ -29,16 +29,17 @@ use hyper::status::StatusCode;
 use hyper::status::StatusClass::{Success,Redirection,ClientError,ServerError};
 use hyper::version::HttpVersion::{Http09,Http10,Http11,Http20};
 use ansi_term::Colour::{Green,Yellow,Red,Cyan};
+use ansi_term::Style::Plain;
 
 fn color_status(status: StatusCode) -> String {
     let s = format!("{}", status);
 
     match status.class() {
-        Success => Green.paint(&s).to_string(),
-        Redirection => Yellow.paint(&s).to_string(),
-        ClientError | ServerError => Red.paint(&s).to_string(),
-        _ => s,
-    }
+        Success => Green.paint(&s),
+        Redirection => Yellow.paint(&s),
+        ClientError | ServerError => Red.paint(&s),
+        _ => Plain.paint(&s),
+    }.to_string()
 }
 
 fn color_version(version: hyper::version::HttpVersion) -> String {

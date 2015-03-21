@@ -13,7 +13,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 #![feature(core)]
-#![feature(net)]
 #![feature(str_words)]
 
 extern crate core;
@@ -25,6 +24,7 @@ use std::env;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::BufRead;
+use std::net::SocketAddr::{V4,V6};
 use hyper::status::StatusCode;
 use hyper::status::StatusClass::{Success,Redirection,ClientError,ServerError};
 use hyper::version::HttpVersion::{Http09,Http10,Http11,Http20};
@@ -68,7 +68,11 @@ fn lookup_ips(domain: String) -> std::io::Result<String> {
 
     let mut ips: Vec<String> = Vec::new();
     for host in hosts {
-       ips.push(format!("{}", host.unwrap().ip()));
+        let ip = match host.unwrap() {
+            V4(sa4) => format!("{}", sa4.ip()),
+            V6(sa6) => format!("{}", sa6.ip()),
+        };
+        ips.push(ip);
     }
 
     ips.sort();

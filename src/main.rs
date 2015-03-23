@@ -130,7 +130,7 @@ fn main() {
         args[1].clone()
     };
 
-    let url = match url::Url::parse(&url_in) {
+    let mut url = match url::Url::parse(&url_in) {
         Ok(x) => x,
         Err(y) => {
             println!("Invalid input: {}", y);
@@ -153,6 +153,12 @@ fn main() {
             return;
         }
     };
+
+    {
+        let mut dm = url.domain_mut().unwrap();
+        dm.clear();
+        dm.push_str(&ip_address);
+    }
 
     let mut client = hyper::Client::new();
     client.set_redirect_policy(hyper::client::RedirectPolicy::FollowNone);

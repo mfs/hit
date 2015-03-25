@@ -163,7 +163,10 @@ fn main() {
     let mut client = hyper::Client::new();
     client.set_redirect_policy(hyper::client::RedirectPolicy::FollowNone);
 
-    let res = client.get(url).header(hyper::header::Host {hostname: domain, port: None}).send();
+    let res = client.get(url)
+        .header(hyper::header::UserAgent("hit/0.0.1".to_string()))
+        .header(hyper::header::Host {hostname: domain, port: None})
+        .send();
 
     match res {
         Ok(y) => {

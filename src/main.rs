@@ -68,11 +68,10 @@ fn lookup_ips(domain: String) -> std::io::Result<String> {
 
     let mut ips: Vec<String> = Vec::new();
     for host in hosts {
-        let ip = match host.unwrap() {
-            V4(sa4) => format!("{}", sa4.ip()),
-            V6(sa6) => format!("{}", sa6.ip()),
+        match host.unwrap() {
+            V4(sa4) => ips.push(format!("{}", sa4.ip())),
+            V6(_) => continue, // :(
         };
-        ips.push(ip);
     }
 
     ips.sort();

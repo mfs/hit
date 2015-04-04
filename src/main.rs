@@ -14,6 +14,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #![feature(core)]
 #![feature(str_words)]
+#![feature(lookup_host)]
 
 extern crate core;
 extern crate hyper;

@@ -19,12 +19,12 @@ use std::env;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::BufRead;
-use std::net::SocketAddr::{V4,V6};
 use hyper::status::StatusCode;
 use hyper::status::StatusClass::{Success,Redirection,ClientError,ServerError};
 use hyper::version::HttpVersion::{Http09,Http10,Http11,Http20};
 use ansi_term::Colour::{Green,Yellow,Red,Cyan};
 use ansi_term::Style::Plain;
+use std::process::Command;
 
 fn color_status(status: StatusCode) -> String {
     let s = format!("{}", status);
@@ -59,25 +59,20 @@ fn color_header(name: String, value: String) -> String {
     }.to_string()
 }
 
-fn lookup_ips(domain: String) -> std::io::Result<String> {
+fn lookup_ips(domain: String) -> Result<String, String> {
+    // Until we get a stable lookup_host or DNS library just shell out to dig.
+    // Yeah, this isn't great.
+    let output = Command::new("dig").arg("+short").arg(&domain).output().unwrap();
 
-    let hosts: std::net::LookupHost =  try!(std::net::lookup_host(&domain));
+    let result = String::from_utf8(output.stdout).unwrap();
 
-    let mut ips: Vec<String> = Vec::new();
-    for host in hosts {
-        match host.unwrap() {
-            V4(sa4) => ips.push(format!("{}", sa4.ip())),
-            V6(_) => continue, // :(
-        };
+    if result == "" {
+       return Err(format!("could not resolve host: {}", &domain).to_string());
     }
 
-    ips.sort();
-    ips.dedup();
+    let ips: Vec<&str> = result.split(char::is_whitespace).filter(|&x| x != "").collect();
 
-    // For now just return first match
-    // Need to prioritize IPv6 over IPv4 plus be able to select one or the
-    // other. Fallback from IPv6 to IPv4 with a warning would be nice too.
-    Ok(ips[0].clone())
+    Ok(ips[0].to_string())
 }
 
 fn domain_in_hosts(domain: &String) -> bool {

@@ -11,12 +11,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-#![feature(core)]
-#![feature(str_words)]
-#![feature(lookup_host)]
-
-extern crate core;
 extern crate hyper;
 extern crate url;
 extern crate ansi_term;
@@ -56,7 +50,9 @@ fn color_version(version: hyper::version::HttpVersion) -> String {
 fn color_header(name: String, value: String) -> String {
     let h = format!("{}: {}", name, value);
 
-    match name.as_slice() {
+    let n: &str = &name;
+
+    match n {
         "Location" => Yellow.paint(&h),
         "Server" | "Via" | "X-Powered-By" | "CF-RAY" => Cyan.paint(&h),
         _ => Plain.paint(&h),
@@ -100,7 +96,7 @@ fn domain_in_hosts(domain: &String) -> bool {
 
         let entry: &str = &line.unwrap();
 
-        let mut elements: Vec<&str> = entry.words().collect();
+        let mut elements: Vec<&str> = entry.split(char::is_whitespace).filter(|&x| x != "").collect();
 
         // skip commented lines
         if elements.len() > 0 && (*elements.remove(0)).starts_with("#") {

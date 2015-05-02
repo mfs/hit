@@ -59,7 +59,14 @@ fn color_header(name: String, value: String) -> String {
     }.to_string()
 }
 
-fn lookup_ips(domain: String) -> Result<String, String> {
+fn lookup_ip(domain: String) -> Result<(String, bool), String> {
+    match domain_in_hosts(&domain) {
+        Some(s) => {
+            return Ok((s, true));
+        },
+        None => {},
+    }
+
     // Until we get a stable lookup_host or DNS library just shell out to dig.
     // Yeah, this isn't great.
     let output = Command::new("dig").arg("+short").arg(&domain).output().unwrap();
@@ -72,13 +79,13 @@ fn lookup_ips(domain: String) -> Result<String, String> {
 
     let ips: Vec<&str> = result.split(char::is_whitespace).filter(|&x| x != "").collect();
 
-    Ok(ips[0].to_string())
+    Ok((ips[0].to_string(), false))
 }
 
-fn domain_in_hosts(domain: &String) -> bool {
+fn domain_in_hosts(domain: &String) -> Option<String> {
     let file = match File::open("/etc/hosts") {
         Ok(file) => file,
-        Err(..) => return false,
+        Err(..) => return None,
     };
 
     let buffer = BufReader::new(&file);
@@ -93,19 +100,20 @@ fn domain_in_hosts(domain: &String) -> bool {
 
         let mut elements: Vec<&str> = entry.split(char::is_whitespace).filter(|&x| x != "").collect();
 
-        // skip commented lines
-        if elements.len() > 0 && (*elements.remove(0)).starts_with("#") {
-            continue;
-        }
+        // skip lines with less than 2 elements
+        if elements.len() < 2 { continue; }
+
+        let ip = elements.remove(0);
+        if ip.starts_with("#") { continue; }
 
         for e in elements {
             if e == *domain {
-                return true;
+                return Some(ip.to_string());
             }
         }
     }
 
-    false
+    None
 }
 
 fn main() {
@@ -131,18 +139,18 @@ fn main() {
 
     let domain = url.domain().unwrap().to_string();
 
-    let hosts_hack = if domain_in_hosts(&domain) {
-        Red.paint(" [/etc/hosts]").to_string()
-    } else {
-        "".to_string()
-    };
-
-    let ip_address = match lookup_ips(domain.to_string()) {
+    let (ip_address, lt) = match lookup_ip(domain.to_string()) {
         Ok(a) => a,
         Err(b) => {
             println!("Error: {}", b);
             return;
         }
+    };
+
+    let hosts_hack = if lt {
+        Red.paint(" [/etc/hosts]").to_string()
+    } else {
+        "".to_string()
     };
 
     {

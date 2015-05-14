@@ -19,6 +19,8 @@ use std::env;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::BufRead;
+use std::net::Ipv4Addr;
+use std::str::FromStr;
 use hyper::status::StatusCode;
 use hyper::status::StatusClass::{Success,Redirection,ClientError,ServerError};
 use hyper::version::HttpVersion::{Http09,Http10,Http11,Http20};
@@ -59,6 +61,10 @@ fn color_header(name: String, value: String) -> String {
     }.to_string()
 }
 
+fn is_ipv4addr(addr: &str) -> bool {
+    Ipv4Addr::from_str(addr).is_ok()
+}
+
 fn lookup_ip(domain: String) -> Result<(String, bool), String> {
     match domain_in_hosts(&domain) {
         Some(s) => {
@@ -77,7 +83,7 @@ fn lookup_ip(domain: String) -> Result<(String, bool), String> {
        return Err(format!("could not resolve host: {}", &domain).to_string());
     }
 
-    let ips: Vec<&str> = result.split(char::is_whitespace).filter(|&x| x != "").collect();
+    let ips: Vec<&str> = result.split(char::is_whitespace).filter(|&x| x != "" && is_ipv4addr(x)).collect();
 
     Ok((ips[0].to_string(), false))
 }

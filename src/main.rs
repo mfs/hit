@@ -25,17 +25,17 @@ use hyper::status::StatusCode;
 use hyper::status::StatusClass::{Success,Redirection,ClientError,ServerError};
 use hyper::version::HttpVersion::{Http09,Http10,Http11,Http20};
 use ansi_term::Colour::{Green,Yellow,Red,Cyan};
-use ansi_term::Style::Plain;
+use ansi_term::Style;
 use std::process::Command;
 
 fn color_status(status: StatusCode) -> String {
     let s = format!("{}", status);
 
     match status.class() {
-        Success => Green.paint(&s),
-        Redirection => Yellow.paint(&s),
-        ClientError | ServerError => Red.paint(&s),
-        _ => Plain.paint(&s),
+        Success => Green.paint(s),
+        Redirection => Yellow.paint(s),
+        ClientError | ServerError => Red.paint(s),
+        _ => Style::new().paint(s),
     }.to_string()
 }
 
@@ -43,9 +43,9 @@ fn color_version(version: hyper::version::HttpVersion) -> String {
     let v = format!("{}", version);
 
     match version {
-        Http09 | Http10 => Yellow.paint(&v),
-        Http11 => Green.paint(&v),
-        Http20 => Cyan.paint(&v),
+        Http09 | Http10 => Yellow.paint(v),
+        Http11 => Green.paint(v),
+        Http20 => Cyan.paint(v),
     }.to_string()
 }
 
@@ -55,9 +55,9 @@ fn color_header(name: String, value: String) -> String {
     let n: &str = &name;
 
     match n {
-        "Location" => Yellow.paint(&h),
-        "Server" | "Via" | "X-Powered-By" | "CF-RAY" => Cyan.paint(&h),
-        _ => Plain.paint(&h),
+        "Location" => Yellow.paint(h),
+        "Server" | "Via" | "X-Powered-By" | "CF-RAY" => Cyan.paint(h),
+        _ => Style::new().paint(h),
     }.to_string()
 }
 
@@ -175,7 +175,7 @@ fn main() {
 
     match res {
         Ok(y) => {
-            println!("{} {} @ {}{}", color_version(y.version), color_status(y.status), Cyan.paint(&ip_address).to_string(), hosts_hack);
+            println!("{} {} @ {}{}", color_version(y.version), color_status(y.status), Cyan.paint(ip_address).to_string(), hosts_hack);
 
             let mut headers: Vec<(String, String)> = Vec::new();
 
